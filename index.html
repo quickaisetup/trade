@@ -2575,8 +2575,7 @@ localStorage.setItem('td_sheets_url', '');
 })();
 // Also seed API key if missing
 if (!localStorage.getItem('td_api_key')) {
-  var _knownApi = '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';
-  localStorage.setItem('td_api_key', _knownApi);
+  // API key must be entered by user in settings
 }
 
 // ── STATE ─────────────────────────────────────────────
@@ -4548,9 +4547,17 @@ async function loadBriefing(force) {
   }
 
   async function callClaude(prompt, maxTokens) {
-    var res = await fetch('https://api.anthropic.com/v1/messages', {
+    var aiUrl = (window.location.hostname==='localhost'||window.location.protocol==='file:')
+      ? 'https://api.anthropic.com/v1/messages'
+      : '/.netlify/functions/ai';
+    var aiHeaders = { 'Content-Type': 'application/json' };
+    if (window.location.hostname==='localhost'||window.location.protocol==='file:') {
+      var k = localStorage.getItem('td_api_key');
+      if (k) { aiHeaders['x-api-key'] = k; aiHeaders['anthropic-version'] = '2023-06-01'; aiHeaders['anthropic-dangerous-direct-browser-access'] = 'true'; }
+    }
+    var res = await fetch(aiUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      headers: aiHeaders,
       body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] })
     });
     var data = await res.json();
@@ -6670,7 +6677,8 @@ window.loadEdgePanel = async function(forceAI) {
       '{"lean":"long"|"short"|"neutral","verdict":"...","action":"...","avoid":"...","edge":"..."}';
 
     try {
-      var res = await fetch('https://api.anthropic.com/v1/messages', {
+      var aiUrl2 = (window.location.hostname==='localhost'||window.location.protocol==='file:') ? 'https://api.anthropic.com/v1/messages' : '/.netlify/functions/ai';
+      var res = await fetch(aiUrl2, {
         method: 'POST',
         headers: { 'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true' },
         body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:200, messages:[{role:'user',content:prompt}] })
